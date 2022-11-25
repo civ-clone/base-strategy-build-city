@@ -13,12 +13,9 @@ import {
 import Buildable from '@civ-clone/core-city-build/Buildable';
 import Food from '@civ-clone/base-terrain-yield-food/Food';
 import PlayerAction from '@civ-clone/core-player/PlayerAction';
-import PopulationSupportFood from '@civ-clone/base-city-yield-population-support-food/PopulationSupportFood';
 import Routine from '@civ-clone/core-strategy/Routine';
 import Settlers from '@civ-clone/base-unit-settlers/Settlers';
-import UnitSupportFood from '@civ-clone/base-city-yield-unit-support-food/UnitSupportFood';
-import Yield from '@civ-clone/core-yield/Yield';
-import { reduceYields } from '@civ-clone/core-yield/lib/reduceYields';
+import { reduceYield } from '@civ-clone/core-yield/lib/reduceYields';
 
 export class BuildSettlers extends Routine {
   #cityGrowthRegistry: CityGrowthRegistry;
@@ -56,25 +53,14 @@ export class BuildSettlers extends Routine {
     }
 
     const city = cityBuild.city(),
+      cityGrowth = this.#cityGrowthRegistry.getByCity(city),
       // TODO: this should probably be abstracted into its own `Rule`.
-      [totalFood, ...foodCosts] = reduceYields(
+      spareFood = reduceYield(
         city.yields(),
-        Food,
-        PopulationSupportFood,
-        UnitSupportFood as unknown as typeof Yield
-      ),
-      totalFoodCost = foodCosts.reduce(
-        (runningTotal, value) => runningTotal + value
-      ),
-      spareFood = totalFood - totalFoodCost;
+        Food
+      )
 
-    if (spareFood < 2) {
-      return false;
-    }
-
-    const cityGrowth = this.#cityGrowthRegistry.getByCity(city);
-
-    if (cityGrowth.size() < 2) {
+    if (spareFood < 2 || cityGrowth.size() < 2) {
       return false;
     }
 
